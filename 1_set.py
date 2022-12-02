@@ -42,8 +42,8 @@ string2 = "686974207468652062756c6c277320657965"
 string11 = unhexlify(string1)
 string22 = unhexlify(string2)
 
-def xor_func(string1, string2):
-    xor = bytes([bit1^bit2 for (bit1,bit2) in zip(string1,string2)]) #bytes([int, int, int]) returns
+def xor_func(a, b):
+    xor = bytes([bit1^bit2 for (bit1,bit2) in zip(a,b)]) #bytes([int, int, int]) returns
     return xor
 
 
@@ -149,7 +149,7 @@ with open("4.txt", "r") as f:
 print(list_of_lines)
 
 #%%
-
+### Challenge 5
 # Implement repeating-key XOR
 #
 # Here is the opening stanza of an important work of the English language:
@@ -170,42 +170,77 @@ print(list_of_lines)
 # Encrypt a bunch of stuff using your repeating-key XOR function. Encrypt your mail. Encrypt your password file.
 # Your .sig file. Get a feel for it. I promise, we aren't wasting your time with this.
 
+
+#shorter version (?)
+
+# source: https://stackoverflow.com/a/3391106
+def pillmod_repeat_to_length(key, to_encrypt):
+    a, b = divmod(len(to_encrypt), len(key))
+    return key * a + key[:b]
+
+
+string2encrypt = "Burning 'em, if you ain't quick and nimble\nI go crazy when I hear a cymbal"
+key = "ICE"
+
+
+keystream = bytes(pillmod_repeat_to_length(key, string2encrypt), "utf-8")
+string2enc = bytes(string2encrypt, "utf-8")
+
+print(hexlify(xor_func(string2enc, keystream)))
+
+
+#other version:
+
 string_to_enc = "Burning 'em, if you ain't quick and nimble\nI go crazy when I hear a cymbal"
 key = "ICE"
-string_bytes = bytes(string_to_enc,"utf-8") # convert string to bytes
-key_bytes = bytes(key,"utf-8")
 
-# get a byte stream(?) of the same length of each i_bytes
-key_bytes_stream = key_bytes * ((len(string_bytes)//len(key)) + 1) # key_bytes[:(len(string_bytes)%len(key))]
-
-enc = hexlify(bytes([bit1^bit2 for (bit1,bit2) in zip(string_bytes, key_bytes_stream)]))
-
-print(enc)
-
-def repeating_key_xor(string_to_enc, key):
-    string_bytes = bytes(string_to_enc, "utf-8")  # convert string to bytes
-    key_bytes = bytes(key, "utf-8")
-
-    key_bytes_stream = key_bytes * ((len(string_bytes) // len(key)) + 1)
+string_bytes = bytes(string_to_enc, "utf-8")  # convert string to bytes
+key_bytes = bytes(key, "utf-8")
+def repeating_key_xor(string_bytes, key_bytes):
+    '''assume byte strings
+    returns hex'''
+    key_bytes_stream = pillmod_repeat_to_length(key_bytes,string_bytes)
 
     return hexlify(bytes([bit1^bit2 for (bit1,bit2) in zip(string_bytes, key_bytes_stream)]))
 
-# and to decode:
+enc_str = repeating_key_xor(b"Ich liebe dich!", b"ICE")
 
 
-def decr_reapeating_key_xor(enc_string, key):
-    string_bytes = enc_string
-    key_bytes = bytes(key, "utf-8")
-    key_bytes_stream = key_bytes * ((len(string_bytes) // len(key)) + 1)
-
-    return bytes([bit1 ^ bit2 for (bit1, bit2) in zip(unhexlify(string_bytes), key_bytes_stream)])
-
-
-enc_str = repeating_key_xor("Ich liebe dich!", "ICE")
-
-decr_reapeating_key_xor(enc_string, "ICE")
 
 #%%
+# Challenge 6
+# Break repeating-key XOR
+# It is officially on, now.
+#
+# This challenge isn't conceptually hard, but it involves actual error-prone coding. The other challenges in this set are there to bring you up to speed. This one is there to qualify you. If you can do this one, you're probably just fine up to Set 6.
+#
+# There's a file here. It's been base64'd after being encrypted with repeating-key XOR.
+#
+# Decrypt it.
+#
+# Here's how:
+#
+#     Let KEYSIZE be the guessed length of the key; try values from 2 to (say) 40.
+#     Write a function to compute the edit distance/Hamming distance between two strings. The Hamming distance is just the number of differing bits. The distance between:
+#
+#     this is a test
+#
+#     and
+#
+#     wokka wokka!!!
+#
+#     is 37. Make sure your code agrees before you proceed.
+#     For each KEYSIZE, take the first KEYSIZE worth of bytes, and the second KEYSIZE worth of bytes, and find the edit distance between them. Normalize this result by dividing by KEYSIZE.
+#     The KEYSIZE with the smallest normalized edit distance is probably the key. You could proceed perhaps with the smallest 2-3 KEYSIZE values. Or take 4 KEYSIZE blocks instead of 2 and average the distances.
+#     Now that you probably know the KEYSIZE: break the ciphertext into blocks of KEYSIZE length.
+#     Now transpose the blocks: make a block that is the first byte of every block, and a block that is the second byte of every block, and so on.
+#     Solve each block as if it was single-character XOR. You already have code to do this.
+#     For each block, the single-byte XOR key that produces the best looking histogram is the repeating-key XOR key byte for that block. Put them together and you have the key.
+#
+# This code is going to turn out to be surprisingly useful later on. Breaking repeating-key XOR ("Vigenere") statistically is obviously an academic exercise, a "Crypto 101" thing. But more people "know how" to break it than can actually break it, and a similar technique breaks something much more important.
+# No, that's not a mistake.
+#
+# We get more tech support questions for this challenge than any of the other ones. We promise, there aren't any blatant errors in this text. In particular: the "wokka wokka!!!" edit distance really is 37.
 
 
 
