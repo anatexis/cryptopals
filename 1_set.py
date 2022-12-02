@@ -74,35 +74,19 @@ enc_string = "1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b37
 import string
 
 
+
 list_of_dec_strings = []
-
-# for i in range(255):                     # b
-#     bit = chr(i).encode("utf-8")         # for printing: utf-8 encoding after \x7f continues with \xc2\x80
-#     enc_string1 = unhexlify(enc_string)
-#     dec_string = bytes([bit1^bit[-1] for bit1 in enc_string1]) # that's why we have to use [-1] to get the second byte
-#     score = 100
-#     for i in string.punctuation:
-#         if i in str(dec_string):
-#             score -= str(dec_string).count(i)
-#     list_of_dec_strings.append((dec_string,score,bit.decode("utf-8")))
-#
-# list_of_dec_strings.sort(key=lambda y: y[1])
-# print(list_of_dec_strings[-3:])
-
-### easier:
 
 for i in range(255):
     bit = i
     enc_string1 = unhexlify(enc_string)
     dec_string = bytes([bit1^bit for bit1 in enc_string1])
-    score = 100
-    for i in string.punctuation:
-        if i in str(dec_string):
-            score -= str(dec_string).count(i)
+    characters = string.ascii_letters + " "
+    score = round(sum([chr(x) in characters for x in dec_string])/len(dec_string),2) #just works for english [a-zA-Z]
     list_of_dec_strings.append((dec_string,score,chr(bit)))
 
-list_of_dec_strings.sort(key=lambda y: y[1])
-print(list_of_dec_strings[-3:])
+result = list(filter(lambda x: (x[1]>0.9), list_of_dec_strings))
+print(result)
 
 
 #%%
@@ -122,7 +106,8 @@ print(list_of_dec_strings[-3:])
 #         raise InvalidMessageException('best candidate message is: %s' % best['message'])
 
 #%%
-###
+
+### Challenge 4
 
 # Detect single-character XOR
 #
@@ -132,32 +117,36 @@ print(list_of_dec_strings[-3:])
 #
 # (Your code from #3 should help.)
 
-#empty list for best strings
-best_string = []
+
+def detect_singel_char_xor(inputstring,cutoffvalue):
+    list_of_dec_strings = []
+
+    for i in range(255):
+        bit = i
+        enc_string1 = unhexlify(inputstring) #input string has to be hex
+        dec_string = bytes([bit1 ^ bit for bit1 in enc_string1])
+        characters = string.ascii_letters + " " #get ascii letters + space
+        score = round(sum([chr(x) in characters for x in dec_string]) / len(dec_string),2)  # just English [a-zA-Z]
+        list_of_dec_strings.append((dec_string, score, chr(bit)))
+
+    result = list(filter(lambda x: (x[1] > cutoffvalue), list_of_dec_strings)) # filter for score > cutoffvalue
+
+    return result
+
+
 
 with open("4.txt", "r") as f:
-    for count, line in enumerate(f):
-        line = line.strip()
-        line = line.split(" ")
-        line = "".join(line)
-        #print(line)
 
-        list_of_dec_strings = []
+        list_of_lines = []
+        for count,line in enumerate(f):
+            line = line.strip()
+            result = detect_singel_char_xor(line,0.8)
+            if result != []:
+                result.sort(key = lambda x: x[1]) #sort the for the best result per line
+                list_of_lines.append((result[0],count)) # only get the best result per line
 
-        for i in range(255):
-            bit = chr(i).encode("utf-8")  # see above
-            enc_string1 = unhexlify(line)
-            dec_string = bytes([bit1 ^ bit[-1] for bit1 in enc_string1])
-            score = 100
-            for i in string.punctuation:
-                if i in str(dec_string):
-                    score -= str(dec_string).count(i)
-            list_of_dec_strings.append((dec_string, score, bit.decode("utf-8"), count))
 
-        list_of_dec_strings.sort(key=lambda y: y[1])
-        best_string.append(list_of_dec_strings[-1])
-
-best_string.sort(key=lambda y: y[1])
+print(list_of_lines)
 
 #%%
 
